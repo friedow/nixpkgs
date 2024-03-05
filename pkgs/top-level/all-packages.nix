@@ -26635,21 +26635,21 @@ with pkgs;
 
   mongodb = hiPrio mongodb-6_0;
 
-  mongodb-4_4 = callPackage ../servers/nosql/mongodb/4.4.nix {
+  mongodb-4_4 = pin-to-gcc12-if-gcc13 (callPackage ../servers/nosql/mongodb/4.4.nix {
     sasl = cyrus_sasl;
     boost = boost179.override { enableShared = false; };
     inherit (darwin) cctools;
     inherit (darwin.apple_sdk.frameworks) CoreFoundation Security;
-  };
+  });
 
-  mongodb-5_0 = callPackage ../servers/nosql/mongodb/5.0.nix {
+  mongodb-5_0 = pin-to-gcc12-if-gcc13 (callPackage ../servers/nosql/mongodb/5.0.nix {
     sasl = cyrus_sasl;
     boost = boost179.override { enableShared = false; };
     inherit (darwin) cctools;
     inherit (darwin.apple_sdk.frameworks) CoreFoundation Security;
-  };
+  });
 
-  mongodb-6_0 = darwin.apple_sdk_11_0.callPackage ../servers/nosql/mongodb/6.0.nix {
+  mongodb-6_0 = pin-to-gcc12-if-gcc13 (darwin.apple_sdk_11_0.callPackage ../servers/nosql/mongodb/6.0.nix {
     sasl = cyrus_sasl;
     boost = boost178.override { enableShared = false; };
     inherit (darwin) cctools;
@@ -26661,7 +26661,7 @@ with pkgs;
         targetPlatform = old.targetPlatform // { darwinMinVersion = "10.14"; };
       }) else
       if stdenv.cc.isClang then llvmPackages.stdenv else stdenv;
-  };
+  });
 
   nginx-sso = callPackage ../servers/nginx-sso { };
 
