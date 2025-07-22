@@ -1,34 +1,57 @@
 {
   lib,
-  buildNpmPackage,
-  fetchurl,
+  stdenv,
+  fetchFromGitHub,
+  pnpm,
+  nodejs,
+  npmHooks,
+  makeBinaryWrapper,
 }:
-
-buildNpmPackage rec {
+stdenv.mkDerivation (finalAttrs: {
   pname = "vue-language-server";
-  version = "2.2.8";
+  version = "3.0.2";
 
-  src = fetchurl {
-    url = "https://registry.npmjs.org/@vue/language-server/-/language-server-${version}.tgz";
-    hash = "sha256-bgec/0/QmuDd7Nh+LdYnmb95ss6Hv685Nf7XNONOTcs=";
+  src = fetchFromGitHub {
+    owner = "vuejs";
+    repo = "language-tools";
+    rev = "v${finalAttrs.version}";
+    hash = "sha256-HsTcA52ZJ/2XpRhG/veD7QQKicwV3LY/AMWkLMoFc+o=";
   };
 
-  npmDepsHash = "sha256-GqIIVS5I21uF2JIUTNs6tkbII6KQ/2xnDoXaTYxahME=";
+  pnpmDeps = pnpm.fetchDeps {
+    inherit (finalAttrs) pname version src;
+    hash = "sha256-VPCtEYloSFCOCVwggZjMM7XETpCvQXpvoGFSDjL+xbo=";
+  };
 
-  postPatch = ''
-    ln -s ${./package-lock.json} package-lock.json
+  nativeBuildInputs = [
+    nodejs
+    pnpm.configHook
+    npmHooks.npmBuildHook
+    makeBinaryWrapper
+  ];
+
+  npmBuildScript = "build";
+
+  installPhase = ''
+    runHook preInstall
+
+    mkdir -p $out/lib/language-tools
+    cp -r node_modules $out/lib/language-tools
+    cp -r packages $out/lib/language-tools
+
+    makeWrapper ${lib.getExe nodejs} $out/bin/vue-language-server \
+      --inherit-argv0 \
+      --add-flags $out/lib/language-tools/packages/language-server/bin/vue-language-server.js
+
+    runHook postInstall
   '';
 
-  dontNpmBuild = true;
-
-  passthru.updateScript = ./update.sh;
-
-  meta = {
+  meta = with lib; {
     description = "Official Vue.js language server";
     homepage = "https://github.com/vuejs/language-tools#readme";
     changelog = "https://github.com/vuejs/language-tools/releases/tag/v${version}";
-    license = lib.licenses.mit;
-    maintainers = with lib.maintainers; [ friedow ];
+    license = licenses.mit;
+    maintainers = with maintainers; [ friedow ];
     mainProgram = "vue-language-server";
   };
-}
+})
