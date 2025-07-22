@@ -5,6 +5,7 @@
   pnpm,
   nodejs,
   npmHooks,
+  nix-update-script,
   makeBinaryWrapper,
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -45,6 +46,8 @@ stdenv.mkDerivation (finalAttrs: {
 
     runHook postInstall
   '';
+
+  passthru.updateScript = nix-update-script { };
 
   meta = with lib; {
     description = "Official Vue.js language server";
