@@ -4,7 +4,6 @@
   fetchFromGitHub,
   pnpm,
   nodejs,
-  npmHooks,
   nix-update-script,
   makeBinaryWrapper,
 }:
@@ -33,17 +32,25 @@ stdenv.mkDerivation (finalAttrs: {
 
   buildPhase = ''
     runHook preBuild
-
-    pnpm run build
-
+    pnpm run build packages/language-server
     runHook postBuild
+  '';
+
+  preInstall = ''
+    pnpm prune --prod
+    find -type f \( -name "*.ts" -o -name "*.map" \) -exec rm -rf {} +
+
+    # https://github.com/pnpm/pnpm/issues/3645
+    find node_modules packages/language-server/node_modules -xtype l -delete
+
+    # remove non-deterministic files
+    rm node_modules/.modules.yaml
   '';
 
   installPhase = ''
     runHook preInstall
 
     mkdir -p $out/{bin,lib/language-tools}
-    # TODO: build only language server
     cp -r {node_modules,packages,extensions} $out/lib/language-tools/
 
     makeWrapper ${lib.getExe nodejs} $out/bin/vue-language-server \
