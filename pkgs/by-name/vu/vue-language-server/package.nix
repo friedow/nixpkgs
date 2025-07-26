@@ -21,24 +21,30 @@ stdenv.mkDerivation (finalAttrs: {
 
   pnpmDeps = pnpm.fetchDeps {
     inherit (finalAttrs) pname version src;
-    hash = "sha256-VPCtEYloSFCOCVwggZjMM7XETpCvQXpvoGFSDjL+xbo=";
+    fetcherVersion = 1;
+    hash = "sha256-7mSnNIAMJwYJ6H2vVtHs7UkhkMEhVmAhBWfGEDco7J0=";
   };
 
   nativeBuildInputs = [
     nodejs
     pnpm.configHook
-    npmHooks.npmBuildHook
     makeBinaryWrapper
   ];
 
-  npmBuildScript = "build";
+  buildPhase = ''
+    runHook preBuild
+
+    pnpm run build
+
+    runHook postBuild
+  '';
 
   installPhase = ''
     runHook preInstall
 
-    mkdir -p $out/lib/language-tools
-    cp -r node_modules $out/lib/language-tools
-    cp -r packages $out/lib/language-tools
+    mkdir -p $out/{bin,lib/language-tools}
+    # TODO: build only language server
+    cp -r {node_modules,packages,extensions} $out/lib/language-tools/
 
     makeWrapper ${lib.getExe nodejs} $out/bin/vue-language-server \
       --inherit-argv0 \
